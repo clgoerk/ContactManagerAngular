@@ -5,11 +5,12 @@ import { Contact } from '../contact';
 import { ContactService } from '../contact.service';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { ChangeDetectorRef } from '@angular/core';
+import { RouterModule } from '@angular/router';
  
 @Component({
   standalone: true,
   selector: 'app-contacts',
-  imports: [HttpClientModule, CommonModule, FormsModule],
+  imports: [HttpClientModule, CommonModule, FormsModule, RouterModule],
   providers: [ContactService],
   templateUrl: './contacts.html',
   styleUrls: ['./contacts.css'],  
@@ -21,6 +22,8 @@ export class Contacts implements OnInit {
  
   error = '';
   success = '';
+
+  selectedFile: File | null = null;
  
   constructor(private contactService: ContactService, private http: HttpClient, private cdr: ChangeDetectorRef) {}
  
@@ -42,6 +45,47 @@ export class Contacts implements OnInit {
         this.error = 'error retrieving contacts';
       }
     );
+  }
+
+  addContact(f: NgForm) {
+    this.resetAlerts();
+    this.uploadFile();
+    this.contactService.add(this.contact).subscribe(
+      (res: Contact) => {
+        this.contacts.push(res);
+        this.success = 'Successfully created';
+        f.reset();
+      },
+      (err) => (this.error = err.message)
+    );
+  }
+
+  editContact(firstName: any, lastName: any, emailAddress: any, phone: any, status: any, dob: any, imageName: any, typeID: any, contactID: any) {
+    
+  }
+
+  deleteContact(contactID: number) {
+
+  }
+
+  uploadFile(): void {
+    if (!this.selectedFile) {
+      return
+    }
+    const formData = new FormData();
+    formData.append('image', this.selectedFile);
+
+    this.http.post('http://localhost/contactmanagerangular/contactapi/upload', formData).subscribe(
+      response  => console.log('File uploaded successfuly: ', response),
+      error => console.error('File upload failed: ', error)
+    );
+  }
+
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if(input.files && input.files.length > 0) {
+      this.selectedFile = input.files[0];
+    }
   }
  
   resetAlerts(): void {
