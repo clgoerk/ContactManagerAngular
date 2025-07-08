@@ -6,31 +6,43 @@ import { ContactService } from '../contact.service';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { ChangeDetectorRef } from '@angular/core';
 import { RouterModule } from '@angular/router';
- 
+
 @Component({
   standalone: true,
   selector: 'app-contacts',
   imports: [HttpClientModule, CommonModule, FormsModule, RouterModule],
   providers: [ContactService],
   templateUrl: './contacts.html',
-  styleUrls: ['./contacts.css'],  
+  styleUrls: ['./contacts.css'],
 })
 export class Contacts implements OnInit {
   title = 'ContactManager';
   public contacts: Contact[] = [];
-  contact: Contact = {firstName:'', lastName:'', emailAddress:'', phone:'', status:'', dob:'', imageName:'', typeID: 0};
- 
+  contact: Contact = {
+    firstName: '',
+    lastName: '',
+    emailAddress: '',
+    phone: '',
+    status: '',
+    dob: '',
+    imageName: '',
+    typeID: 0
+  };
+
   error = '';
   success = '';
-
   selectedFile: File | null = null;
- 
-  constructor(private contactService: ContactService, private http: HttpClient, private cdr: ChangeDetectorRef) {}
- 
+
+  constructor(
+    private contactService: ContactService,
+    private http: HttpClient,
+    private cdr: ChangeDetectorRef
+  ) {}
+
   ngOnInit(): void {
     this.getContacts();
   }
- 
+
   getContacts(): void {
     this.contactService.getAll().subscribe(
       (data: Contact[]) => {
@@ -38,7 +50,7 @@ export class Contacts implements OnInit {
         this.success = 'successful list retrieval';
         console.log('successful list retrieval');
         console.log(this.contacts);
-        this.cdr.detectChanges(); // <--- force UI update
+        this.cdr.detectChanges();
       },
       (err) => {
         console.log(err);
@@ -60,38 +72,64 @@ export class Contacts implements OnInit {
     );
   }
 
-  editContact(firstName: any, lastName: any, emailAddress: any, phone: any, status: any, dob: any, imageName: any, typeID: any, contactID: any) {
-    
+  editContact(firstName: any, lastName: any, emailAddress: any, phone: any, contactID: any) {
+    this.resetAlerts();
+    console.log(firstName.value);
+    this.contactService.edit({
+      firstName: firstName.value,
+      lastName: lastName.value,
+      emailAddress: emailAddress.value,
+      phone: phone.value,
+      contactID: +contactID
+    }).subscribe(
+      (res) => {
+        this.success = 'Successfully edited';
+      },
+      (err) => {
+        this.error = err.message;
+      }
+    );
   }
 
   deleteContact(contactID: number) {
-
+    this.resetAlerts();
+    this.contactService.delete(contactID)
+      .subscribe(
+        (res) => {
+          this.contacts = this.contacts.filter( function (item) {
+            return item['contactID'] && +item['contactID'] !== +contactID;
+          });
+          this.success = "Deleted successfully"
+        },
+        (err) => (
+          this.error = err.message
+        )
+      );
   }
 
   uploadFile(): void {
     if (!this.selectedFile) {
-      return
+      return;
     }
     const formData = new FormData();
     formData.append('image', this.selectedFile);
 
     this.http.post('http://localhost/contactmanagerangular/contactapi/upload', formData).subscribe(
-      response  => console.log('File uploaded successfuly: ', response),
+      response => console.log('File uploaded successfuly: ', response),
       error => console.error('File upload failed: ', error)
     );
   }
 
   onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
-    if(input.files && input.files.length > 0) {
+    if (input.files && input.files.length > 0) {
       this.selectedFile = input.files[0];
     }
   }
- 
+
   resetAlerts(): void {
     this.error = '';
     this.success = '';
   }
 }
- 
  
