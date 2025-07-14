@@ -61,12 +61,20 @@ export class Contacts implements OnInit {
 
   addContact(f: NgForm) {
     this.resetAlerts();
-    this.uploadFile();
+
+    if (this.selectedFile) {
+      this.contact.imageName = this.selectedFile.name;
+      this.uploadFile();
+    } else {
+      this.contact.imageName = ''; 
+    }
+
     this.contactService.add(this.contact).subscribe(
       (res: Contact) => {
         this.contacts.push(res);
         this.success = 'Successfully created';
         f.reset();
+        this.selectedFile = null;
       },
       (err) => (this.error = err.message)
     );
@@ -83,6 +91,7 @@ export class Contacts implements OnInit {
       contactID: +contactID
     }).subscribe(
       (res) => {
+        this.cdr.detectChanges();
         this.success = 'Successfully edited';
       },
       (err) => {
@@ -93,18 +102,16 @@ export class Contacts implements OnInit {
 
   deleteContact(contactID: number) {
     this.resetAlerts();
-    this.contactService.delete(contactID)
-      .subscribe(
-        (res) => {
-          this.contacts = this.contacts.filter( function (item) {
-            return item['contactID'] && +item['contactID'] !== +contactID;
-          });
-          this.success = "Deleted successfully"
-        },
-        (err) => (
-          this.error = err.message
-        )
-      );
+    this.contactService.delete(contactID).subscribe(
+      (res) => {
+        this.contacts = this.contacts.filter(function (item) {
+          return item['contactID'] && +item['contactID'] !== +contactID;
+        });
+        this.cdr.detectChanges();
+        this.success = 'Deleted successfully';
+      },
+      (err) => (this.error = err.message)
+    );
   }
 
   uploadFile(): void {
@@ -115,7 +122,7 @@ export class Contacts implements OnInit {
     formData.append('image', this.selectedFile);
 
     this.http.post('http://localhost/contactmanagerangular/contactapi/upload', formData).subscribe(
-      response => console.log('File uploaded successfuly: ', response),
+      response => console.log('File uploaded successfully: ', response),
       error => console.error('File upload failed: ', error)
     );
   }

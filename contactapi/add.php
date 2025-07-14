@@ -28,6 +28,11 @@
     $origimg = str_replace('\\', '/', $imageName);
     $new = basename($origimg);
 
+    if (empty($new)) {
+    $new = 'placeholder.jpg';
+    }
+
+
     // Store the data
     $sql = "INSERT INTO `contacts`(`contactID`,`firstName`,`lastName`, `emailAddress`, `phone`, `status`, `dob`, `imageName`) 
             VALUES (null,'{$firstName}','{$lastName}','{$emailAddress}','{$phone}','{$status}','{$dob}', '{$new}')";

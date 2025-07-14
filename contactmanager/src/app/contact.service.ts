@@ -8,12 +8,11 @@ import { Contact } from './contact';
 @Injectable({
   providedIn: 'root',
 })
-
 export class ContactService {
   baseUrl = 'http://localhost/contactmanagerangular/contactapi';
 
   constructor(private http: HttpClient) {
-    // no statements required
+    // No statements required
   }
 
   getAll() {
@@ -25,7 +24,7 @@ export class ContactService {
   }
 
   add(contact: Contact) {
-    return this.http.post(`${this.baseUrl}/add`, {data: contact}).pipe(
+    return this.http.post(`${this.baseUrl}/add`, { data: contact }).pipe(
       map((res: any) => {
         return res['data'];
       })
@@ -33,11 +32,12 @@ export class ContactService {
   }
 
   edit(contact: Contact) {
-    return this.http.put(`${this.baseUrl}/edit`, {data: contact});
+    return this.http.put(`${this.baseUrl}/edit`, { data: contact });
   }
 
   delete(contactID: any) {
     const params = new HttpParams().set('contactID', contactID.toString());
-    return this.http.delete(`${this.baseUrl}/delete`, {params: params});
+    return this.http.get(`${this.baseUrl}/delete`, { params: params });
+    // return this.http.delete(`${this.baseUrl}/delete`, { params: params });
   }
 }
