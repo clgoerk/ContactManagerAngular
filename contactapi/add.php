@@ -1,11 +1,10 @@
 <?php
-  require 'connect.php';
+require 'connect.php';
 
-  // Get the posted data
-  $postdata = file_get_contents("php://input");
+// Get the posted data
+$postdata = file_get_contents("php://input");
 
-  if (isset($postdata) && !empty($postdata)) {
-
+if (isset($postdata) && !empty($postdata)) {
     // Extract the data
     $request = json_decode($postdata);
 
@@ -13,7 +12,7 @@
     if (trim($request->data->firstName) === '' || trim($request->data->lastName) === '' ||
         trim($request->data->emailAddress) === '' || trim($request->data->phone) === '' ||
         trim($request->data->status) === '' || trim($request->data->dob) === '') {
-      return http_response_code(400);
+        return http_response_code(400);
     }
 
     // Sanitize
@@ -24,36 +23,55 @@
     $status = mysqli_real_escape_string($con, trim($request->data->status));
     $dob = mysqli_real_escape_string($con, trim($request->data->dob));
     $imageName = mysqli_real_escape_string($con, trim($request->data->imageName));
+    $typeID = mysqli_real_escape_string($con, trim($request->data->typeID));
+
 
     $origimg = str_replace('\\', '/', $imageName);
     $new = basename($origimg);
-
     if (empty($new)) {
-    $new = 'placeholder.jpg';
+        $new = 'placeholder.jpg';
     }
 
+    // 🔍 Check for duplicate email
+    $checkEmailSql = "SELECT 1 FROM contacts WHERE emailAddress = '{$emailAddress}'";
+    $checkEmailResult = mysqli_query($con, $checkEmailSql);
+    if (mysqli_num_rows($checkEmailResult) > 0) {
+        http_response_code(409); // Conflict
+        echo json_encode(['message' => 'Duplicate email address.']);
+        exit;
+    }
 
-    // Store the data
-    $sql = "INSERT INTO `contacts`(`contactID`,`firstName`,`lastName`, `emailAddress`, `phone`, `status`, `dob`, `imageName`) 
-            VALUES (null,'{$firstName}','{$lastName}','{$emailAddress}','{$phone}','{$status}','{$dob}', '{$new}')";
+    // 🔍 Check for duplicate imageName (excluding placeholder image)
+    if ($new !== 'placeholder.jpg') {
+        $checkImageSql = "SELECT 1 FROM contacts WHERE imageName = '{$new}'";
+        $checkImageResult = mysqli_query($con, $checkImageSql);
+        if (mysqli_num_rows($checkImageResult) > 0) {
+            http_response_code(409); // Conflict
+            echo json_encode(['message' => 'Duplicate image name.']);
+            exit;
+        }
+    }
+
+    // Insert into DB
+    $sql = "INSERT INTO `contacts`(`contactID`,`firstName`,`lastName`, `emailAddress`, `phone`, `status`, `dob`, `imageName`, `typeID`) 
+            VALUES (null,'{$firstName}','{$lastName}','{$emailAddress}','{$phone}','{$status}','{$dob}', '{$new}', '{$typeID}')";
 
     if (mysqli_query($con, $sql)) {
-      http_response_code(201);
-
-      $contact = [
-        'firstName' => $firstName,
-        'lastName' => $lastName,
-        'emailAddress' => $emailAddress,
-        'phone' => $phone,
-        'status' => $status,
-        'dob' => $dob,
-        'imageName' => $new,
-        'contactID' => mysqli_insert_id($con)
-      ];
-
-      echo json_encode(['data' => $contact]);
+        http_response_code(201);
+        $contact = [
+            'firstName' => $firstName,
+            'lastName' => $lastName,
+            'emailAddress' => $emailAddress,
+            'phone' => $phone,
+            'status' => $status,
+            'dob' => $dob,
+            'imageName' => $new,
+            'typeID' => $typeID,
+            'contactID' => mysqli_insert_id($con)
+        ];
+        echo json_encode(['data' => $contact]);
     } else {
-      http_response_code(422);
+        http_response_code(422);
     }
-  }
+}
 ?>

@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
@@ -14,30 +14,60 @@ import { RouterModule, Router } from '@angular/router';
   imports: [CommonModule, FormsModule, HttpClientModule, RouterModule],
   providers: [ContactService]
 })
-export class Addcontacts {
-  contact: Contact = {firstName:'', lastName:'', emailAddress:'', phone:'', status:'', dob:'', imageName:'', typeID: 0};
+export class Addcontacts implements OnInit {
+  contact: Contact = {
+    firstName: '', lastName: '', emailAddress: '',
+    phone: '', status: '', dob: '', imageName: '',
+    typeID: 0
+  };
+
   selectedFile: File | null = null;
   error = '';
   success = '';
+  types: { typeID: number, contactType: string }[] = [];
 
-  constructor(private contactService: ContactService, private http: HttpClient, private router: Router) {}
+  constructor(
+    private contactService: ContactService,
+    private http: HttpClient,
+    private router: Router,
+    private cdr: ChangeDetectorRef
+  ) {}
+
+  ngOnInit(): void {
+    this.loadTypes();
+  }
+
+  loadTypes(): void {
+    this.http.get<{ typeID: number, contactType: string }[]>('http://localhost/contactmanagerangular/contactapi/types.php')
+      .subscribe({
+        next: (data) => this.types = data,
+        error: () => this.error = 'Failed to load contact types'
+      });
+  }
 
   addContact(f: NgForm) {
     this.resetAlerts();
 
     if (!this.contact.imageName) {
-      this.contact.imageName = 'placeholder.jpg';
+      this.contact.imageName = 'placeholder_100.jpg';
     }
-
-    this.uploadFile();
 
     this.contactService.add(this.contact).subscribe(
       (res: Contact) => {
         this.success = 'Successfully created';
+
+        if (this.selectedFile && this.contact.imageName !== 'placeholder.jpg') {
+          this.uploadFile();
+          this.cdr.detectChanges();
+        }
+
         f.reset();
-        this.router.navigate(['/contacts']); // redirect back
+        this.router.navigate(['/contacts']);
       },
-      (err) => this.error = err.message
+      (err) => {
+        this.error = err.error?.message || err.message || 'Error occurred';
+        this.cdr.detectChanges();
+      }
     );
   }
 

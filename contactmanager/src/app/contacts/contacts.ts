@@ -65,8 +65,9 @@ export class Contacts implements OnInit {
     if (this.selectedFile) {
       this.contact.imageName = this.selectedFile.name;
       this.uploadFile();
+      this.cdr.detectChanges();
     } else {
-      this.contact.imageName = ''; 
+      this.contact.imageName = '';
     }
 
     this.contactService.add(this.contact).subscribe(
@@ -100,18 +101,20 @@ export class Contacts implements OnInit {
     );
   }
 
-  deleteContact(contactID: number) {
+  deleteContact(contactID: number): void {
+    const confirmed = window.confirm("Are you sure you want to delete this contact?");
+    if (!confirmed) return;
+
     this.resetAlerts();
-    this.contactService.delete(contactID).subscribe(
-      (res) => {
-        this.contacts = this.contacts.filter(function (item) {
-          return item['contactID'] && +item['contactID'] !== +contactID;
-        });
+
+    this.contactService.delete(contactID).subscribe({
+      next: () => {
+        this.contacts = this.contacts.filter(item => item.contactID && +item.contactID !== +contactID);
+        this.success = "Deleted successfully";
         this.cdr.detectChanges();
-        this.success = 'Deleted successfully';
       },
-      (err) => (this.error = err.message)
-    );
+      error: err => this.error = err.message
+    });
   }
 
   uploadFile(): void {
