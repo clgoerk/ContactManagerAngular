@@ -5,6 +5,7 @@ import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { Contact } from '../contact';
 import { ContactService } from '../contact.service';
 import { RouterModule, Router } from '@angular/router';
+import { Auth } from '../services/auth';
 
 @Component({
   standalone: true,
@@ -24,10 +25,13 @@ export class Addcontacts implements OnInit {
   selectedFile: File | null = null;
   error = '';
   success = '';
+  userName = '';
+  maxDate: string = '';
   types: { typeID: number, contactType: string }[] = [];
 
   constructor(
     private contactService: ContactService,
+    public authService: Auth,
     private http: HttpClient,
     private router: Router,
     private cdr: ChangeDetectorRef
@@ -35,6 +39,12 @@ export class Addcontacts implements OnInit {
 
   ngOnInit(): void {
     this.loadTypes();
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    this.maxDate = `${yyyy}-${mm}-${dd}`;
+    this.userName = localStorage.getItem('username') || 'Guest';
   }
 
   loadTypes(): void {
@@ -48,6 +58,21 @@ export class Addcontacts implements OnInit {
   addContact(f: NgForm) {
     this.resetAlerts();
 
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(this.contact.emailAddress??'')) {
+      this.error = 'Please enter a valid email address.';
+      this.cdr.detectChanges();
+      return;
+    }
+
+    const phoneRegex = /^(\(\d{3}\)\s|\d{3}-)\d{3}-\d{4}$/;
+    if (!phoneRegex.test(this.contact.phone??'')) {
+      this.error = 'Please enter a valid phone number.';
+      this.cdr.detectChanges();
+      return;
+    }
+
     if (!this.contact.imageName) {
       this.contact.imageName = 'placeholder_100.jpg';
     }
@@ -56,7 +81,7 @@ export class Addcontacts implements OnInit {
       (res: Contact) => {
         this.success = 'Successfully created';
 
-        if (this.selectedFile && this.contact.imageName !== 'placeholder.jpg') {
+        if (this.selectedFile && this.contact.imageName !== 'placeholder_100.jpg') {
           this.uploadFile();
           this.cdr.detectChanges();
         }
